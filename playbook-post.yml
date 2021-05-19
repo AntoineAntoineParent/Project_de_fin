@@ -1,0 +1,41 @@
+- hosts: all
+  become: yes
+
+  tasks:
+    - name: Update apt cache
+      apt: update_cache=yes            
+    - name: debconf for PhpMyAdmin
+      debconf: name=phpmyadmin question='phpmyadmin/dbconfig-install' value='true' vtype='boolean'
+    
+    - name: debconf for PhpMyAdmin
+      debconf: name=phpmyadmin question='phpmyadmin/app-password-confirm' value='{{ vccw.db_pass }}' vtype='password'
+    
+    - name: debconf for PhpMyAdmin
+      debconf: name=phpmyadmin question='phpmyadmin/mysql/admin-pass' value='{{ vccw.db_pass }}' vtype='password'
+    
+    - name: debconf for PhpMyAdmin
+      debconf: name=phpmyadmin question='phpmyadmin/mysql/app-pass' value='{{ vccw.db_pass }}' vtype='password'
+    
+    - name: debconf for PhpMyAdmin
+      debconf: name=phpmyadmin question='phpmyadmin/reconfigure-webserver' value='' vtype='multiselect'
+    
+    - name: install PhpMyAdmin
+      apt: pkg=phpmyadmin state=present
+    
+    - name: Create apache conf link 
+      file:
+        src: "/etc/phpmyadmin/apache.conf"
+        dest: "/etc/apache2/sites-available/phpmyadmin.conf"
+        state: link
+    - name: Create apache conf link 
+      file:
+        src: "/etc/phpmyadmin/apache.conf"
+        dest: "/etc/apache2/sites-enabled/phpmyadmin.conf"
+        state: link
+
+    - name: configure site
+      file: path=/var/www/phpmyadmin src=/usr/share/phpmyadmin state=link
+
+    - name: restart apache
+       become: yes
+       service: name=apache2 state=restarted
