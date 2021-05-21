@@ -37,14 +37,6 @@
       path: "{{ path }}/index.html"
       state: absent
 
-  # download wordpress
-  - name: Run `wp core download`
-    command: |
-      wp core download
-      --path={{ path }}
-      --version={{ vccw.version }}
-      --force
-
   # wp-config.php
   - name: Create temporary file for extra-php in wp-config.php
     template:
@@ -62,51 +54,6 @@
        --dbprefix={{ vccw.db_prefix }} \
        --locale={{ vccw.lang }} \
        --extra-php < /tmp/extra-wp-config.php
-
-  # Reset Database
-  - name: Run `wp db reset`
-    command: wp db reset --yes --path={{ path }}
-    when: vccw.reset_db_on_provision
-
-  # install wordpress
-  - name: Run `wp core install`
-    command: |
-      wp core install
-      --path={{ path }}
-      --url=http://{{ vccw.hostname }}/{{ vccw.wp_siteurl }}
-      --title='{{ vccw.title }}'
-      --admin_user={{ vccw.admin_user }}
-      --admin_password={{ vccw.admin_pass }}
-      --admin_email={{ vccw.admin_email }}
-
-  - name: Create index.php for wp_siteurl
-    when: vccw.wp_siteurl != ''
-    template:
-      src: templates/index.php
-      dest: /tmp/index.php
-  - name: Move index.php for wp_siteurl
-    when: vccw.wp_siteurl != ''
-    command: "mv /tmp/index.php {{ vccw.document_root }}/index.php"
-
-  - stat:
-      path: "{{ path }}/.gitignore"
-    register: st
-  - name: Create `.gitignore`
-    get_url:
-      url: "{{ vccw.gitignore }}"
-      dest: /tmp/.gitignore
-      mode: 0644
-      force: yes
-    when: st.stat.exists != true
-  - name: Move `.gitignore`
-    command: "mv /tmp/.gitignore {{ path }}/.gitignore"
-    when: st.stat.exists != true
-
-  - name: Run `wp core language install`
-    command: |
-      wp core language install {{ vccw.lang }}
-      --path={{ path }}
-      --activate
 
   # Install Plugins
   - name: Run `wp plugin install`
